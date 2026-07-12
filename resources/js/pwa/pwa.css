@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+
+@source '../../views/pwa.blade.php';
+@source './**/*.vue';
+@source './**/*.js';

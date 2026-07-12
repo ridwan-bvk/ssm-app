@@ -1,0 +1,72 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: absensi-sekolah-next
+    container_name: absensi-next-app
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-db_absensi_next}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      TZ: Asia/Jakarta
+    volumes:
+      - ./storage:/app/storage
+    networks:
+      - app-network
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    container_name: absensi-next-db
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-db_absensi_next}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-changeme}
+      TZ: Asia/Jakarta
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysql -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --ssl-mode=DISABLED -e 'SELECT 1'",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  pma:
+    image: phpmyadmin/phpmyadmin
+    container_name: absensi-next-pma
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    ports:
+      - "8081:80"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
